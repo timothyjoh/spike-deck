@@ -1,0 +1,125 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  min-height: 100vh;
+}
+
+#app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+h1 { font-size: 1.6rem; margin-bottom: 1.5rem; }
+h2 { font-size: 1.2rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1rem; margin-bottom: 0.5rem; color: #444; }
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+button {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  background: #3b82f6;
+  color: #fff;
+}
+
+button:hover { background: #2563eb; }
+button.danger { background: #ef4444; }
+button.danger:hover { background: #dc2626; }
+button.secondary { background: #6b7280; }
+button.secondary:hover { background: #4b5563; }
+button.small { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1.5rem;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+/* Deck list */
+[data-testid="deck-item"] {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+[data-testid="deck-item"]:last-child { border-bottom: none; }
+[data-testid="deck-item"].selected { background: #eff6ff; border-radius: 4px; }
+
+[data-testid="deck-name"] {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card list */
+[data-testid="card-item"] {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #fafafa;
+}
+
+[data-testid="card-front"] { font-weight: 600; font-size: 0.9rem; }
+[data-testid="card-back"] { color: #555; font-size: 0.85rem; margin-top: 0.2rem; }
+
+.card-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+/* Edit-card inline form */
+.edit-card-form {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.edit-card-form input { width: 100%; }
+.edit-card-form .row { margin-bottom: 0; }
+
+/* Plug-in zone comment — m3 review / m4 import-export / stats will mount here */
+.plugin-zone {
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  border: 1px dashed #bbb;
+  border-radius: 6px;
+  color: #999;
+  font-size: 0.8rem;
+}

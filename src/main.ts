@@ -1,5 +1,6 @@
-const app = document.querySelector<HTMLDivElement>("#app");
+import "./style.css";
+import { Store } from "./storage.js";
+import { renderApp } from "./ui.js";
 
-if (app) {
-  app.innerHTML = `<h1>Deck</h1>`;
-}
+const store = new Store();
+renderApp(store);
