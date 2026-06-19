@@ -13,6 +13,7 @@
 
 import { Store, type Deck } from "./storage.js";
 import { ReviewSession, dueCards } from "./review.js";
+import { exportDeck, importDeck, deckStats } from "./io.js";
 
 // ---------------------------------------------------------------------------
 // State held outside the render cycle (just what deck is selected)
@@ -394,6 +395,145 @@ function renderReviewView(store: Store, deck: Deck, session: ReviewSession, cont
 }
 
 // ---------------------------------------------------------------------------
+// Import / Export + Stats (m4)
+// ---------------------------------------------------------------------------
+
+// Testable hook: last exported JSON is stored here for e2e tests
+declare global {
+  interface Window {
+    __lastExport?: string;
+  }
+}
+
+function mountImportExportStats(store: Store, container: HTMLElement): void {
+  container.innerHTML = "";
+
+  const section = el("div", { class: "panel" });
+  section.appendChild(el("h2", {}, "Import / Export + Stats"));
+
+  // ---- Stats ----
+  const statsSection = el("div", { style: "margin-bottom:1rem" });
+  statsSection.appendChild(el("h3", {}, "Stats"));
+
+  const today = new Date();
+  const selectedDeck = selectedDeckId ? store.getDeck(selectedDeckId) : undefined;
+
+  if (selectedDeck) {
+    const stats = deckStats(selectedDeck, today);
+    const statsRow = el("div", { class: "row", style: "gap:1rem" });
+
+    const totalEl = el("span", { "data-testid": "stats-total" }, String(stats.total));
+    const dueEl = el("span", { "data-testid": "stats-due" }, String(stats.due));
+
+    statsRow.appendChild(el("span", {}, "Cards: "));
+    statsRow.appendChild(totalEl);
+    statsRow.appendChild(el("span", { style: "margin-left:1rem" }, " Due today: "));
+    statsRow.appendChild(dueEl);
+    statsSection.appendChild(statsRow);
+  } else {
+    // No deck selected — still render testid elements with zeroes so e2e can reference them
+    const statsRow = el("div", { class: "row", style: "gap:1rem;color:#999" });
+    const totalEl = el("span", { "data-testid": "stats-total" }, "0");
+    const dueEl = el("span", { "data-testid": "stats-due" }, "0");
+    statsRow.appendChild(el("span", {}, "Select a deck to see stats · Cards: "));
+    statsRow.appendChild(totalEl);
+    statsRow.appendChild(el("span", { style: "margin-left:1rem" }, " Due today: "));
+    statsRow.appendChild(dueEl);
+    statsSection.appendChild(statsRow);
+  }
+
+  section.appendChild(statsSection);
+
+  // ---- Export ----
+  const exportSection = el("div", { style: "margin-bottom:1rem" });
+  exportSection.appendChild(el("h3", {}, "Export"));
+
+  // Hidden textarea so e2e tests can read the exported JSON without intercepting a download
+  const exportOutput = el("textarea", {
+    "data-testid": "export-output",
+    style: "display:none",
+    readonly: "readonly",
+    rows: "1",
+    cols: "40",
+  });
+  exportSection.appendChild(exportOutput);
+
+  const exportBtn = btn("Export selected deck (JSON)", "");
+  exportBtn.setAttribute("data-testid", "export-deck-btn");
+  exportBtn.addEventListener("click", () => {
+    const deck = selectedDeckId ? store.getDeck(selectedDeckId) : undefined;
+    if (!deck) {
+      alert("Select a deck first.");
+      return;
+    }
+    const json = exportDeck(deck);
+    // Stash for e2e test access
+    exportOutput.value = json;
+    window.__lastExport = json;
+    // Trigger download
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${deck.name.replace(/[^a-z0-9]/gi, "_")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  exportSection.appendChild(exportBtn);
+  section.appendChild(exportSection);
+
+  // ---- Import ----
+  const importSection = el("div", {});
+  importSection.appendChild(el("h3", {}, "Import"));
+  importSection.appendChild(
+    el("p", { style: "font-size:.85rem;color:#666" }, "Paste exported JSON below and click Import.")
+  );
+
+  const importTextarea = el("textarea", {
+    "data-testid": "import-textarea",
+    placeholder: "Paste exported deck JSON here…",
+    rows: "5",
+    style: "width:100%;font-size:.8rem;font-family:monospace",
+  });
+  importSection.appendChild(importTextarea);
+
+  const importBtn = btn("Import deck", "");
+  importBtn.setAttribute("data-testid", "import-deck-btn");
+
+  const importError = el("div", {
+    "data-testid": "import-error",
+    style: "color:#c00;margin-top:.5rem;font-size:.85rem;display:none",
+  });
+  importSection.appendChild(importBtn);
+  importSection.appendChild(importError);
+
+  importBtn.addEventListener("click", () => {
+    const json = importTextarea.value.trim();
+    if (!json) {
+      importError.textContent = "Please paste JSON into the text area first.";
+      importError.style.display = "block";
+      return;
+    }
+    try {
+      const deck = importDeck(json);
+      store.addImportedDeck(deck);
+      importTextarea.value = "";
+      importError.style.display = "none";
+      selectedDeckId = deck.id;
+      renderApp(store);
+    } catch (err: unknown) {
+      importError.textContent = err instanceof Error ? err.message : String(err);
+      importError.style.display = "block";
+    }
+  });
+
+  section.appendChild(importSection);
+  container.appendChild(section);
+}
+
+// ---------------------------------------------------------------------------
 // Main render entry point
 // ---------------------------------------------------------------------------
 
@@ -412,6 +552,6 @@ export function renderApp(store: Store): void {
 
   // === m4 import/export + stats plug-in zone ===
   const importExportZone = el("div", { id: "import-export-zone", class: "plugin-zone" });
-  importExportZone.textContent = "[m4 import/export + stats mounts here]";
+  mountImportExportStats(store, importExportZone);
   app.appendChild(importExportZone);
 }

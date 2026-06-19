@@ -1,4 +1,4 @@
 {"id":"m1","title":"Scaffold + SM-2 scheduler with unit tests","state":"done"}
 {"id":"m2","title":"Deck/card CRUD persisted to localStorage","state":"done"}
 {"id":"m3","title":"Review mode: due cards, Space reveal, 1-4 rate, SM-2 reschedule","state":"done"}
-{"id":"m4","title":"Import/export JSON + stats (counts)","state":"todo"}
+{"id":"m4","title":"Import/export JSON + stats (counts)","state":"done"}

@@ -6,3 +6,7 @@
 {"ts":1781881821,"step":"m3.unit","status":"pass","detail":"62 executed / 62 passed / 0 failed (16 new review tests)"}
 {"ts":1781881821,"step":"m3.e2e","status":"pass","detail":"2 executed / 2 passed / 0 failed (review flow + reload persistence, chromium)"}
 {"ts":1781881821,"step":"m3.verify","status":"PASS","detail":"tester drove real Chromium through review flow; screenshots 01-04 in test-artifacts; 0 console/page errors"}
+{"ts":1781882366,"step":"m4.fix","status":"ok","detail":"vite.config.ts: scoped vitest to tests/, excluded e2e/ — npm test now exits 0 (was collecting playwright spec)"}
+{"ts":1781882366,"step":"m4.unit","status":"pass","detail":"88 executed / 88 passed / 0 failed (26 new io tests)"}
+{"ts":1781882366,"step":"m4.e2e","status":"pass","detail":"5 executed / 5 passed / 0 failed (review x2 + io x3: stats, export/import round-trip, bad-import)"}
+{"ts":1781882366,"step":"m4.verify","status":"PASS","detail":"tester drove real Chromium: review + export/import + stats + bad-import + reload persistence; 0 console/page errors; screenshots m4-01..05"}

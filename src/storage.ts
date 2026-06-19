@@ -134,6 +134,12 @@ export class Store {
     return true;
   }
 
+  /** Add a fully-formed imported deck (id already assigned by importDeck). */
+  addImportedDeck(deck: Deck): void {
+    this.state.decks.push(deck);
+    this.save();
+  }
+
   /** Replace the card in-place (used by review mode to persist SM-2 result). */
   updateCard(deckId: string, card: Card): boolean {
     const deck = this.getDeck(deckId);
