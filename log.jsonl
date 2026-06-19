@@ -1,3 +1,8 @@
 {"ts":1781880753,"step":"init","status":"ok","detail":"decomposed into 4 milestones; fresh repo; node v25; port 5180 free"}
 {"ts":1781881080,"step":"m1.unit","status":"pass","detail":"18 executed / 18 passed / 0 failed (vitest); build clean"}
 {"ts":1781881080,"step":"m1.commit","status":"ok","detail":"f5fa770 pushed to origin/main"}
+{"ts":1781881326,"step":"m2.unit","status":"pass","detail":"46 executed / 46 passed / 0 failed; persistence round-trip test green; build clean"}
+{"ts":1781881326,"step":"m2.commit","status":"ok","detail":"a1574c0 pushed to origin/main"}
+{"ts":1781881821,"step":"m3.unit","status":"pass","detail":"62 executed / 62 passed / 0 failed (16 new review tests)"}
+{"ts":1781881821,"step":"m3.e2e","status":"pass","detail":"2 executed / 2 passed / 0 failed (review flow + reload persistence, chromium)"}
+{"ts":1781881821,"step":"m3.verify","status":"PASS","detail":"tester drove real Chromium through review flow; screenshots 01-04 in test-artifacts; 0 console/page errors"}

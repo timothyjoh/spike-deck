@@ -7,11 +7,12 @@
  * data-testid attributes are kept stable for e2e tests (m3/m4).
  *
  * === Plug-in zones ===
- * - Review mode (m3): mount into the element with id="review-zone"
+ * - Review mode (m3): mounted inline in the card panel (replaces review-zone placeholder)
  * - Import/Export + Stats (m4): mount into id="import-export-zone"
  */
 
 import { Store, type Deck } from "./storage.js";
+import { ReviewSession, dueCards } from "./review.js";
 
 // ---------------------------------------------------------------------------
 // State held outside the render cycle (just what deck is selected)
@@ -226,12 +227,170 @@ function renderCardPanel(store: Store, container: HTMLElement): void {
     panel.appendChild(cardEl);
   }
 
-  // === m3 review-mode plug-in zone ===
+  // === m3 review-mode ===
   const reviewZone = el("div", { id: "review-zone", class: "plugin-zone" });
-  reviewZone.textContent = "[m3 review mode mounts here]";
+  mountReviewMode(store, deck, reviewZone);
   panel.appendChild(reviewZone);
 
   container.appendChild(panel);
+}
+
+// ---------------------------------------------------------------------------
+// Review mode (m3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Mount the review-mode UI into `container` for `deck`.
+ * Shows a "Review" button; clicking it replaces the container content with
+ * the review view. On exit, renderApp() is called to restore the deck view.
+ */
+function mountReviewMode(store: Store, deck: Deck, container: HTMLElement): void {
+  container.innerHTML = "";
+
+  const today = new Date();
+
+  // Header row: card count / due count + Review button
+  const headerRow = el("div", { class: "row", style: "margin-top:1rem;align-items:center;gap:.5rem" });
+  const due = dueCards(deck, today);
+  const statsEl = el("span", { style: "color:#666;font-size:.85rem" }, `${deck.cards.length} cards · ${due.length} due today`);
+  const reviewBtn = btn("Review", "");
+  reviewBtn.setAttribute("data-testid", "review-deck-btn");
+  headerRow.append(statsEl, reviewBtn);
+  container.appendChild(headerRow);
+
+  reviewBtn.addEventListener("click", () => {
+    startReview(store, deck, container, today);
+  });
+}
+
+function startReview(store: Store, deck: Deck, container: HTMLElement, today: Date): void {
+  const session = new ReviewSession(deck, today);
+  renderReviewView(store, deck, session, container);
+}
+
+function renderReviewView(store: Store, deck: Deck, session: ReviewSession, container: HTMLElement): void {
+  container.innerHTML = "";
+
+  const view = el("div", { "data-testid": "review-view" });
+
+  if (session.isDone()) {
+    // Session complete
+    const complete = el("div", { "data-testid": "review-complete" });
+    complete.appendChild(el("p", { style: "font-weight:bold" }, "All done! No more cards due."));
+    const exitBtn = btn("Back to deck", "secondary");
+    exitBtn.setAttribute("data-testid", "exit-review-btn");
+    exitBtn.addEventListener("click", () => {
+      renderApp(store);
+    });
+    complete.appendChild(exitBtn);
+    view.appendChild(complete);
+    container.appendChild(view);
+    return;
+  }
+
+  // Remaining count
+  const remainingEl = el("div", { "data-testid": "review-remaining", style: "font-size:.85rem;color:#666;margin-bottom:.5rem" },
+    `${session.remaining()} card${session.remaining() === 1 ? "" : "s"} remaining`);
+  view.appendChild(remainingEl);
+
+  const card = session.current()!;
+
+  // Front
+  const frontEl = el("div", { "data-testid": "review-front", style: "font-size:1.2rem;font-weight:bold;margin-bottom:.75rem;padding:.5rem;border:1px solid #ddd;border-radius:4px" }, card.front);
+  view.appendChild(frontEl);
+
+  // Back (hidden until revealed)
+  const backEl = el("div", { "data-testid": "review-back", style: "display:none;font-size:1.1rem;margin-bottom:.75rem;padding:.5rem;border:1px solid #ddd;border-radius:4px;background:#f9f9f9" }, card.back);
+  view.appendChild(backEl);
+
+  // Reveal button
+  const revealBtn = btn("Show answer (Space)", "");
+  revealBtn.setAttribute("data-testid", "reveal-btn");
+  view.appendChild(revealBtn);
+
+  // Rating buttons (hidden until revealed)
+  const ratingRow = el("div", { class: "row", style: "display:none;gap:.5rem;margin-top:.5rem" });
+  const againBtn = btn("1 Again", "danger small");
+  againBtn.setAttribute("data-testid", "rate-again");
+  const hardBtn = btn("2 Hard", "secondary small");
+  hardBtn.setAttribute("data-testid", "rate-hard");
+  const goodBtn = btn("3 Good", "small");
+  goodBtn.setAttribute("data-testid", "rate-good");
+  const easyBtn = btn("4 Easy", "small");
+  easyBtn.setAttribute("data-testid", "rate-easy");
+  ratingRow.append(againBtn, hardBtn, goodBtn, easyBtn);
+  view.appendChild(ratingRow);
+
+  // Controls hint
+  const hint = el("p", { style: "font-size:.75rem;color:#999;margin-top:.5rem" }, "Space: reveal · 1-4: rate");
+  view.appendChild(hint);
+
+  // Exit button
+  const exitBtn = btn("Exit review", "secondary small");
+  exitBtn.setAttribute("data-testid", "exit-review-btn");
+  exitBtn.style.marginTop = ".75rem";
+  view.appendChild(exitBtn);
+
+  exitBtn.addEventListener("click", () => {
+    removeKeydownListener();
+    renderApp(store);
+  });
+
+  container.appendChild(view);
+
+  // ---- reveal logic ----
+  let revealed = false;
+
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    session.reveal();
+    backEl.style.display = "block";
+    revealBtn.style.display = "none";
+    ratingRow.style.display = "flex";
+  }
+
+  function rate(rating: "again" | "hard" | "good" | "easy") {
+    if (!revealed) return;
+    const result = session.rate(rating);
+    if (result) {
+      store.updateCard(result.deckId, result.updatedCard);
+    }
+    removeKeydownListener();
+    renderReviewView(store, deck, session, container);
+  }
+
+  revealBtn.addEventListener("click", reveal);
+  againBtn.addEventListener("click", () => rate("again"));
+  hardBtn.addEventListener("click", () => rate("hard"));
+  goodBtn.addEventListener("click", () => rate("good"));
+  easyBtn.addEventListener("click", () => rate("easy"));
+
+  // ---- keyboard handler ----
+  function onKeydown(e: KeyboardEvent) {
+    // Ignore if focus is in an input/textarea
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      reveal();
+    } else if (e.key === "1") {
+      rate("again");
+    } else if (e.key === "2") {
+      rate("hard");
+    } else if (e.key === "3") {
+      rate("good");
+    } else if (e.key === "4") {
+      rate("easy");
+    }
+  }
+
+  document.addEventListener("keydown", onKeydown);
+
+  function removeKeydownListener() {
+    document.removeEventListener("keydown", onKeydown);
+  }
 }
 
 // ---------------------------------------------------------------------------
